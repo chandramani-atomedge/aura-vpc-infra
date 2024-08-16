@@ -197,7 +197,23 @@ https://aws.amazon.com/blogs/aws/choosing-the-right-ec2-instance-type-for-your-a
 
 # Aura-49
 
-### Web-App Cluster creation
+## Web-App Cluster creation
+
+### Procedures to create a web-app infrastructure
+![web-app](https://github.com/user-attachments/assets/d5698edd-bab7-45be-b075-aa094c963a30)
+
+1. Create a Bastion Host in our Own VPC
+2. We need to create a AutoScaling Group to create an Instances 
+3. Then create a two public instances and it should be scale up to 4 instance when needed
+4. we need to SSH only through Bastion
+5. The bastion Host should access only through Static IP
+6. We must create an extra EBS volume to attach in our instances
+7. We can give the static IP dynamaically while applying
+```
+terraform apply -var="static_ip=0.0.0.0/0" -auto-approve
+```
+
+
 
   Created Security group(WEB-CLUSTER-SG), when we need to ssh in to the bastion host we need to attach our static ip in the security group(Bastion) in ssh cidr block to access from our local machine. Added Bastion host's Security group in the inbound rule , Created Launch Configuration for Auto Scaling Group in that EBS volume is attached, Created Autoscaling group with Load balancer and Target group with two instances placed into public subnets so that it can be directly connected with the internet and then attached auto scaling policy(Target Tracking policy) for Scale up and for scale down we used (Step scaling).We need to ssh through Bastion so created Bastion host. 
 
