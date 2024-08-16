@@ -24,11 +24,157 @@ vpc_name = "Aura-Cloud"
 vpc_cidr_block = "10.0"
 ```
 
-### Subnets 
+## SUBNETS 
+We need to create a two public subnets and three private subnets with the dynamic availability zone
+### subnets.tf
+```
+#Public Subnets
+resource "aws_subnet" "public_subnets" {
+  count                   = length(local.public_subnet_cidrs)
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = element(local.public_subnet_cidrs, count.index)
+  availability_zone       = element(local.azs, count.index)
+  map_public_ip_on_launch = true
+
+  tags = {
+    Name = "Public Subnet ${count.index + 1}"
+  }
+}
 
 
+#Private Subnets
+resource "aws_subnet" "private_subnets" {
+  count             = length(local.private_subnet_cidrs)
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = element(local.private_subnet_cidrs, count.index)
+  availability_zone = element(local.azs, count.index)
+
+  tags = {
+    Name = "Private Subnet ${count.index + 1}"
+  }
+}
+
+```
+### variable.tf
+We need to give the value dynamically, so that we are assigning it using tfvars files and we need to fetch using the variables 
+
+```
+variable "aws_region" {}
+
+variable "vpc_name" {}
+
+variable "vpc_cidr_block"{}
+
+locals {
+  azs = [
+    "${var.aws_region}a",
+    "${var.aws_region}b",
+    "${var.aws_region}c",
+
+  ]
+
+  public_subnet_cidrs = [
+    "${var.vpc_cidr_block}.1.0/24",
+    "${var.vpc_cidr_block}.2.0/24"
+  ]
+
+  private_subnet_cidrs = [
+    "${var.vpc_cidr_block}.4.0/24",
+    "${var.vpc_cidr_block}.5.0/24",
+    "${var.vpc_cidr_block}.6.0/24"
+  ]
+}
+
+```
+## Route Tables
+We should create a public subnets for web app cluster public instances and private subnets for db cluster private instances
+### Route Table for public subnets
+```
+#route Table for public subnets
+resource "aws_route_table" "public_rt" {
+  vpc_id = aws_vpc.main.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.gw.id
+  }
+
+  tags = {
+    Name = "AURA-CLOUD Public subnet"
+  }
+}
 
 
+#Route table association for public subnets
+resource "aws_route_table_association" "public_subnet_asso" {
+  count          = length(local.public_subnet_cidrs)
+  subnet_id      = element(aws_subnet.public_subnets[*].id, count.index)
+  route_table_id = aws_route_table.public_rt.id
+}
+
+```
+### Route Table for Private Subnets
+```
+
+# Route Table for Private Subnets
+resource "aws_route_table" "private_rt" {
+  vpc_id = aws_vpc.main.id
+
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.nat_gw.id
+  }
+
+  tags = {
+    Name = "AURA-CLOUD Private subnets"
+  }
+}
+
+# Route Table Association for Private Subnets
+resource "aws_route_table_association" "private_subnet_asso" {
+  count          = length(local.private_subnet_cidrs)
+  subnet_id      = element(aws_subnet.private_subnets[*].id, count.index)
+  route_table_id = aws_route_table.private_rt.id
+}
+
+```
+## Internet Gateway
+We need internet gateway for Public subnets
+```
+#Internet Gateway
+resource "aws_internet_gateway" "gw" {
+  vpc_id = aws_vpc.main.id
+
+  tags = {
+    Name = "AURA-CLOUD-IGW"
+  }
+}
+
+```
+## NAT Gateway
+First we need to create an elastic IP for NAT Gateway and connect it to any public subnets and we need to Attach the NATE Gayeway
+to Route table for Private Instance
+
+```
+resource "aws_eip" "elastic_ip" {
+#  vpc = true
+
+  tags = {
+    Name = "AURA-CLOUD NAT EIP"
+  }
+}
+
+# Create the NAT Gateway for Outbound Rules
+resource "aws_nat_gateway" "nat_gw" {
+  allocation_id = aws_eip.elastic_ip.id
+  subnet_id     = element(aws_subnet.public_subnets[*].id, 0)
+
+  tags = {
+    Name = "AURA-CLOUD NATGW"
+  }
+}
+
+```
 
 # Aura-48
 
