@@ -322,9 +322,9 @@ terraform apply -var="aws_region=ap-south-1"
 
   # AURA-107
 
-  ### Attach external volume to all web & DB instances
+  ### Attach external volume to both Web & DB instances
 
-  The requirement is to attach external ebs volume to both web and dp instances,
+ External ebs volume attached for both webapp and dp instances,
 
   ```
   variable "db_ebs_volume_size" {
@@ -337,7 +337,7 @@ terraform apply -var="aws_region=ap-south-1"
 }
   ```
 
-  the below Script is for mount the external attached volume,
+  The below Script is for mount the external attached volume,
 
   ```
   #!/bin/bash
@@ -375,48 +375,17 @@ echo "EBS volume $DEVICE_NAME mounted at $MOUNT_POINT and added to /etc/fstab."
 
   ```
 
-  In Launch configuration we need to add the user data script to mount the external ebs volume in our instances,we need to add this script in both webapp cluster and db cluster.
-
-  ```
-    resource "aws_launch_configuration" "db_config" {
-  name_prefix     = "db-config-sg"
-  image_id        = var.ami_map
-  instance_type   = lookup(var.db_instance_type,terraform.workspace)
-  security_groups = [aws_security_group.db_sg.id]
-  key_name        = var.key_name
-  root_block_device {
-    volume_type = "gp3"
-    volume_size = lookup(var.db_root_volume_size,terraform.workspace)
-  }
-  ebs_block_device {
-    device_name = "/dev/xvdbc"
-    volume_type = "gp3"
-    volume_size = lookup(var.db_ebs_volume_size,terraform.workspace)
-  }  
-  user_data = file("./modules/db/script.sh")
-
-  lifecycle {
-    create_before_destroy = true
-  }
-}
-```
-For db cluster use the above launch configurations but change the user data script in db with full path.
-```
-    user_data = file("./modules/db/script.sh")  #db
-
-  ```
-
   # AURA-113
 
   ### Parameterize Region
 
-It is dynamic in such as a way that the entire resources is created for the given region which user is specified. When we want the specific region we need to pass the variable while applying the terraform script example,     terraform apply -var="region=<specific-region>"
+It is dynamic in such as a way that the entire resources is created for the given region which user is specified. When we want the specific region we need to pass the variable while applying the terraform script example, ``` terraform apply -var="region=<specific-region>"```
 
 
 ```
     terraform apply -var="region=<us-east-1>"
 ```
-  when we create resource we used specific region, That region automatically fetch the ami id.
+  The region automatically fetch the ami id.
 ```
 variable "ami_map" {
   type = map(string)
