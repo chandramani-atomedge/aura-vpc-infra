@@ -409,3 +409,104 @@ variable "ami_map" {
 }
 
 ```
+# Aura-158
+## Admin Side Creation
+1. Go to Aws console login: https://console.aws.amazon.com/ 
+
+2. Create a New User as per the user's request and give the certain permissions like 
+ ```
+        IAMUserChangePassword
+        IAMReadOnlyAccess
+        IAMUserSSHKeys
+        AmazonEC2ReadOnlyAccess
+```
+3. The admin User should generate his own ssh-key in their machine by using this command:
+```
+ssh-keygen -t rsa -b 4096
+```
+3. Navigate to the file path once the ssh-key is generated
+```
+cd ~/.ssh
+```
+4. copy the id_rsa.pub file as text
+   
+5. Then the user should login in the AWS Console: https://console.aws.amazon.com/
+
+7. Navigate to IAM -> Users-> username -> Security Credentials ->SSH public keys for AWS CodeCommit -> upload the id_rsa.pub key from the machine 
+![image](https://github.com/user-attachments/assets/266c98c8-f239-4d61-8127-cfd59c37708a)
+
+8. The public key and private key of the admin user automatically pushes in to the bastion host with the help of user data script.
+
+9. If not copied automatically the admin user should manually copy from local machine and paste his public key(id_rsa) in to the authorized_keys of bastion 
+
+10. Once it is completed the admin user should copy from local machine and paste his private key(id_rsa) to the bastion by using the scp command or manually(AWS Console)
+```
+scp ~/.ssh/id_rsa ubuntu@ipaddress:/home/ubuntu/.ssh
+```
+11. we can SSH in to bastion without pem file
+```
+ssh ubuntu@<ipaddress>
+```
+12. After ssh in to bastion admin should create a new User
+```
+sudo useradd -m -s /bin/bash <username>
+```
+13. If the new user want a password(Optional)
+```
+sudo passwd <username>
+```
+14. Go to the custom user
+```
+sudo su <username>
+```
+15. Go to the custom user directory
+```
+cd /home/<username>
+```
+16. Create a ssh folder
+```
+mkdir .ssh
+```
+17. Inside the ssh folder create the file name called authorized keys
+```
+touch authorized_keys
+```
+18. We should get the public key from the user and paste it in the authorized keys of the user
+
+## User Side Creation
+
+1. The User should generate his own ssh-key in their machine by using this command:
+  ```
+  ssh-keygen -t rsa -b 4096
+  ```
+
+2. Navigate to the file path once the ssh-key is generated
+  ```
+  cd ~/.ssh
+  ```
+
+3. copy the id_rsa.pub file as text
+   
+4. Then the user should login in the AWS Console: https://console.aws.amazon.com/
+
+5. Navigate to IAM -> Users-> username -> Security Credentials ->SSH public keys for AWS CodeCommit -> upload the id_rsa.pub key from the machine 
+![image](https://github.com/user-attachments/assets/266c98c8-f239-4d61-8127-cfd59c37708a)
+
+6. copy the id_rsa.pub file and give to the admin user for bastion user access
+
+7. After admin gives the access to custom username for bastion, try ssh in the bastion with the username which is admin created for you
+   ```
+   ssh <username>@ipaddress
+   ```
+
+8. If the ssh login is successful in the bastion with the custom username, give the following command
+   ```
+   scp ~/.ssh/id_rsa <username>@ipaddress:/home/<username>/.ssh
+   ```
+
+9. Once the id_rsa file is copied in the server, ssh in to the server and give the read only permissions for the private key(id_rsa)
+   ```
+   chmod 400 /home/<username>/.ssh/id_rsa
+   ```
+
+10. Once it is successfull the user can ssh in to all instances
