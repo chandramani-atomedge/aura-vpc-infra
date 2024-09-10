@@ -504,6 +504,11 @@ touch authorized_keys
    scp ~/.ssh/id_rsa <username>@ipaddress:/home/<username>/.ssh
    ```
 
+### VPC Peering (AURA -187)
+
+
+
+
 9. Once the id_rsa file is copied in the server, ssh in to the server and give the read only permissions for the private key(id_rsa)
    ```
    chmod 400 /home/<username>/.ssh/id_rsa
