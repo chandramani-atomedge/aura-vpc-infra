@@ -67,3 +67,5 @@ Restart the wazuh agent by using the below command,
 ```
 sudo systemctl restart wazuh-agent
 ```
+
+## Both the client machine and the Wazuh dashboard Machine should contain the Port Number in Inbound Rule(1515, 1514)
